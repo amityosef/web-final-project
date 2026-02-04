@@ -4,8 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Load environment variables based on NODE_ENV
-const envFile = process.env.NODE_ENV === "production" ? ".env" : ".env.dev";
-dotenv.config({ path: envFile });
+dotenv.config({ path: ".env" });
 
 // Import routes
 import movieRoutes from "./routes/movieRoutes";
