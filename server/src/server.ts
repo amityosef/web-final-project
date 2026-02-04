@@ -2,6 +2,7 @@ import https from "https";
 import http from "http";
 import fs from "fs";
 import initApp from "./index";
+import path from "path";
 
 initApp().then((app) => {
   if (process.env.NODE_ENV != "production") {
@@ -13,8 +14,8 @@ initApp().then((app) => {
   }
 
   const httpsOptions = {
-    key: fs.readFileSync("../../../../client-key.pem"),
-    cert: fs.readFileSync("../../../../client-cert.pem"),
+    key: fs.readFileSync(path.join(__dirname, "../../../../client-key.pem")),
+    cert: fs.readFileSync(path.join(__dirname, "../../../../client-cert.pem")),
   };
 
   https.createServer(httpsOptions, app).listen(process.env.HTTPS_PORT, () => {
