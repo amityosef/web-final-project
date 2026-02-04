@@ -15,33 +15,29 @@ import userRoutes from "./routes/userRoutes";
 import aiRoutes from "./routes/aiRoutes";
 import multerRoute from "./routes/multerRoutes";
 import { specs, swaggerUi } from "./swagger";
+import cors from "cors";
 
 const app = express();
 
 const initApp = () => {
   const promise = new Promise<Express>((resolve, reject) => {
-    // Body parsing middleware
     app.use(express.urlencoded({ extended: false }));
     app.use(express.json());
 
-    // CORS configuration
     const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || ["http://localhost:5173", "https://localhost:5173"];
 
-    app.use((req, res, next) => {
-      const origin = req.headers.origin;
-      if (origin && allowedOrigins.includes(origin)) {
-        res.header("Access-Control-Allow-Origin", origin);
-      }
-      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-      res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-      res.header("Access-Control-Allow-Credentials", "true");
-
-      // Handle preflight requests
-      if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
-      }
-      next();
-    });
+    app.use(cors({
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"]
+    }));
 
     // Static files
     app.use("/public", express.static(path.join(__dirname, "../public")));
