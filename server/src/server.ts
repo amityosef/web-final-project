@@ -1,12 +1,26 @@
+import https from "https";
+import http from "http";
+import fs from "fs";
 import initApp from "./index";
 
-const PORT = process.env.PORT || 3000;
-
 initApp().then((app) => {
-  app.listen(PORT, () => {
-      console.log(`🚀 HTTP Server is running on http://localhost:${PORT}`);
-      console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-    });
+  if (process.env.NODE_ENV != "production") {
+    console.log("development")
+    http.createServer(app).listen(process.env.PORT, () => {
+      console.log(`🔒 HTTPS Server is running on https://localhost:${process.env.PORT}`);
+      console.log(`📚 API Documentation: https://localhost:${process.env.PORT}/api-docs`);
+    })
+  }
+
+  const httpsOptions = {
+    key: fs.readFileSync("../client-key.pem"),
+    cert: fs.readFileSync("../client-cert.pem"),
+  };
+
+  https.createServer(httpsOptions, app).listen(process.env.HTTPS_PORT, () => {
+    console.log(`🔒 HTTPS Server is running on https://localhost:${process.env.HTTPS_PORT}`);
+    console.log(`📚 API Documentation: https://localhost:${process.env.HTTPS_PORT}/api-docs`);
+  });
 }).catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
