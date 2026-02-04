@@ -15,14 +15,15 @@
     "@emotion/styled": "^11.11.5",
     "@mui/icons-material": "^5.15.20",
     "@mui/material": "^5.15.20",
+    "@react-oauth/google": "^0.12.1",
     "axios": "^1.7.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.23.1",
     "react-infinite-scroll-component": "^6.1.0",
-    "@react-oauth/google": "^0.12.1"
+    "react-router-dom": "^6.23.1"
   },
   "devDependencies": {
+    "@types/node": "^25.2.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@typescript-eslint/eslint-plugin": "^7.13.0",
