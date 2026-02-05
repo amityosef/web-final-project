@@ -20,7 +20,6 @@ beforeAll(async () => {
   await User.deleteMany({ email: testUser.email });
   await Post.deleteMany({});
 
-  // Register user
   const res = await request(app)
     .post("/auth/register")
     .send(testUser);
@@ -28,7 +27,6 @@ beforeAll(async () => {
   accessToken = res.body.token;
   userId = res.body.user._id;
 
-  // Create some posts for the user
   for (let i = 0; i < 3; i++) {
     await request(app)
       .post("/post")
@@ -114,7 +112,6 @@ describe("User Profile API", () => {
     });
 
     test("should fail to update another user's profile", async () => {
-      // Register another user
       const otherUser = await request(app)
         .post("/auth/register")
         .send({
@@ -124,7 +121,6 @@ describe("User Profile API", () => {
 
       const otherToken = otherUser.body.token;
 
-      // Try to update original user's profile with other user's token
       const res = await request(app)
         .put(`/user/${userId}`)
         .set("Authorization", `Bearer ${otherToken}`)
@@ -132,7 +128,6 @@ describe("User Profile API", () => {
 
       expect(res.status).toBe(403);
 
-      // Cleanup
       await User.deleteMany({ email: "other@example.com" });
     });
 
@@ -142,13 +137,13 @@ describe("User Profile API", () => {
         .set("Authorization", `Bearer ${accessToken}`)
         .send({
           name: "Final Name",
-          email: "hacked@email.com", // Should be ignored
-          password: "newpassword" // Should be ignored
+          email: "hacked@email.com",
+          password: "newpassword"
         });
 
       expect(res.status).toBe(200);
       expect(res.body.name).toBe("Final Name");
-      expect(res.body.email).toBe(testUser.email); // Should remain unchanged
+      expect(res.body.email).toBe(testUser.email);
     });
 
     test("should fail to update non-existent user", async () => {
@@ -181,10 +176,6 @@ describe("User Profile API", () => {
     });
 
     test("should handle get my profile when user doesn't exist", async () => {
-      // This is an edge case that shouldn't happen in normal flow
-      // but tests the error handling in getMyProfile
-
-      // Register a temporary user
       const tempUser = await request(app)
         .post("/auth/register")
         .send({
@@ -195,10 +186,8 @@ describe("User Profile API", () => {
       const tempToken = tempUser.body.token;
       const tempUserId = tempUser.body.user._id;
 
-      // Delete the user directly from DB
       await User.findByIdAndDelete(tempUserId);
 
-      // Try to get profile with valid token but deleted user
       const res = await request(app)
         .get("/user/me")
         .set("Authorization", `Bearer ${tempToken}`);

@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: function (this: IUser) {
-      return !this.googleId; // Password required only if not OAuth user
+      return !this.googleId;
     },
   },
   name: {
@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
   googleId: {
     type: String,
     unique: true,
-    sparse: true, // Allows null values while maintaining uniqueness
+    sparse: true,
   },
   refreshToken: {
     type: [String],

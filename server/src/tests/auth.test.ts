@@ -104,20 +104,17 @@ describe("Auth API", () => {
         singlePostData._id = response.body._id;
     });
 
-    //set jest timeout to 10s
     jest.setTimeout(15000);
 
     test("test token expiration", async () => {
-        // Assuming the token expiration is set to short duration for testing
         delete singlePostData._id;
-        await new Promise(resolve => setTimeout(resolve, 6000)); // wait for 6 seconds
+        await new Promise(resolve => setTimeout(resolve, 6000));
         const response = await request(app).post("/post")
             .set("Authorization", "Bearer " + userData.token)
             .send(singlePostData);
         expect(response.statusCode).toBe(401);
         expect(response.body).toHaveProperty("error");
 
-        //get new token using refresh token
         const refreshResponse = await request(app).post("/auth/refresh-token").send({
             refreshToken: userData.refreshToken
         });
@@ -127,7 +124,6 @@ describe("Auth API", () => {
         userData.token = refreshResponse.body.token;
         userData.refreshToken = refreshResponse.body.refreshToken;
 
-        //access with new token
         const newAccessResponse = await request(app).post("/post")
             .set("Authorization", "Bearer " + userData.token)
             .send(singlePostData);
@@ -135,9 +131,7 @@ describe("Auth API", () => {
         expect(newAccessResponse.body).toHaveProperty("_id");
     });
 
-    //test double use of refresh token
     test("test double use of refresh token", async () => {
-        //get new token using refresh token
         const refreshResponse1 = await request(app).post("/auth/refresh-token").send({
             refreshToken: userData.refreshToken
         });
@@ -147,14 +141,12 @@ describe("Auth API", () => {
         const firstNewRefreshToken = refreshResponse1.body.refreshToken;
         userData.token = refreshResponse1.body.token;
 
-        //try to use the same refresh token again
         const refreshResponse2 = await request(app).post("/auth/refresh-token").send({
             refreshToken: userData.refreshToken
         });
         expect(refreshResponse2.statusCode).toBe(401);
         expect(refreshResponse2.body).toHaveProperty("error");
 
-        //try to use the new refresh token to see that it is blocked
         const refreshResponse3 = await request(app).post("/auth/refresh-token").send({
             refreshToken: firstNewRefreshToken
         });
@@ -163,7 +155,6 @@ describe("Auth API", () => {
     });
 
     test("test logout", async () => {
-        // First login to get fresh tokens
         const loginRes = await request(app).post("/auth/login").send({
             email: userData.email,
             password: userData.password
@@ -171,7 +162,6 @@ describe("Auth API", () => {
         userData.token = loginRes.body.token;
         userData.refreshToken = loginRes.body.refreshToken;
 
-        // Test logout
         const logoutRes = await request(app)
             .post("/auth/logout")
             .set("Authorization", "Bearer " + userData.token)
@@ -180,7 +170,6 @@ describe("Auth API", () => {
         expect(logoutRes.statusCode).toBe(200);
         expect(logoutRes.body.message).toBe("Logged out successfully");
 
-        // Verify refresh token is invalidated
         const refreshRes = await request(app).post("/auth/refresh-token").send({
             refreshToken: userData.refreshToken
         });
@@ -251,14 +240,12 @@ describe("Auth API", () => {
     });
 
     test("test logout all devices (no refresh token provided)", async () => {
-        // Login to get tokens
         const loginRes = await request(app).post("/auth/login").send({
             email: userData.email,
             password: userData.password
         });
         const token = loginRes.body.token;
 
-        // Logout without providing refreshToken
         const logoutRes = await request(app)
             .post("/auth/logout")
             .set("Authorization", "Bearer " + token)
@@ -275,7 +262,7 @@ describe("Auth API", () => {
     });
 
     test("test google login without credential", async () => {
-        const response = await request(app).post("/auth/google-login").send({});
+        const response = await request(app).post("/auth/google").send({});
         expect(response.statusCode).toBe(400);
         expect(response.body.error).toBe("Google credential is required");
     });
@@ -289,7 +276,6 @@ describe("Auth API", () => {
         expect(response.statusCode).toBe(201);
         expect(response.body.user.name).toBe("defaultname");
 
-        // Cleanup
         await User.deleteMany({ email: newEmail });
     });
 });

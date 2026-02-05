@@ -4,11 +4,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middleware/authMiddleware";
 
-const sendError = (res: Response, message: string, code?: number) => {
-    const errCode = code || 400;
-    res.status(errCode).json({ error: message });
-}
-
 type Tokens = {
     token: string;
     refreshToken: string;
@@ -21,22 +16,20 @@ type UserResponse = {
     profileImage: string;
 }
 
+const sendError = (res: Response, message: string, code = 400) => {
+    res.status(code).json({ error: message });
+};
+
 const generateToken = (userId: string): Tokens => {
-    const secret: string = process.env.JWT_SECRET || "secretkey";
-    const exp: number = parseInt(process.env.JWT_EXPIRES_IN || "3600"); // 1 hour
-    const refreshexp: number = parseInt(process.env.JWT_REFRESH_EXPIRES_IN || "86400"); // 24 hours
-    const token = jwt.sign(
-        { userId: userId },
-        secret,
-        { expiresIn: exp }
-    );
-    const refreshToken = jwt.sign(
-        { userId: userId },
-        secret,
-        { expiresIn: refreshexp } // 24 hours
-    );
-    return { token, refreshToken };
-}
+    const secret = process.env.JWT_SECRET || "secretkey";
+    const exp = parseInt(process.env.JWT_EXPIRES_IN || "3600");
+    const refreshExp = parseInt(process.env.JWT_REFRESH_EXPIRES_IN || "86400");
+
+    return {
+        token: jwt.sign({ userId }, secret, { expiresIn: exp }),
+        refreshToken: jwt.sign({ userId }, secret, { expiresIn: refreshExp }),
+    };
+};
 
 const formatUserResponse = (user: IUser): UserResponse => ({
     _id: user._id.toString(),
@@ -51,11 +44,11 @@ const register = async (req: Request, res: Response) => {
     if (!email || !password) {
         return sendError(res, "Email and password are required", 401);
     }
+
     try {
-        // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return sendError(res, "User with this email already exists", 400);
+            return sendError(res, "User with this email already exists");
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -63,18 +56,14 @@ const register = async (req: Request, res: Response) => {
         const user = await User.create({
             email,
             password: encryptedPassword,
-            name: name || email.split('@')[0], // Default name from email
+            name: name || email.split("@")[0],
         });
 
         const tokens = generateToken(user._id.toString());
-
         user.refreshToken.push(tokens.refreshToken);
         await user.save();
 
-        res.status(201).json({
-            ...tokens,
-            user: formatUserResponse(user),
-        });
+        res.status(201).json({ ...tokens, user: formatUserResponse(user) });
     } catch (error) {
         console.error("Registration error:", error);
         return sendError(res, "Registration failed", 401);
@@ -94,7 +83,6 @@ const login = async (req: Request, res: Response) => {
             return sendError(res, "Invalid email or password");
         }
 
-        // Check if this is an OAuth user trying to login with password
         if (user.googleId && !user.password) {
             return sendError(res, "Please use Google login for this account");
         }
@@ -105,14 +93,10 @@ const login = async (req: Request, res: Response) => {
         }
 
         const tokens = generateToken(user._id.toString());
-
         user.refreshToken.push(tokens.refreshToken);
         await user.save();
 
-        res.status(200).json({
-            ...tokens,
-            user: formatUserResponse(user),
-        });
+        res.status(200).json({ ...tokens, user: formatUserResponse(user) });
     } catch (error) {
         console.error("Login error:", error);
         return sendError(res, "Login failed");
@@ -123,63 +107,44 @@ const googleLogin = async (req: Request, res: Response) => {
     const { credential } = req.body;
 
     if (!credential) {
-        return sendError(res, "Google credential is required", 400);
+        return sendError(res, "Google credential is required");
     }
 
     try {
-        // Decode Google JWT token (in production, verify with Google's public keys)
         const decoded = jwt.decode(credential) as {
             email: string;
             name: string;
             picture: string;
-            sub: string; // Google user ID
+            sub: string;
         };
 
         if (!decoded || !decoded.email) {
-            return sendError(res, "Invalid Google credential", 400);
+            return sendError(res, "Invalid Google credential");
         }
 
-        // Find or create user
         let user = await User.findOne({
-            $or: [
-                { googleId: decoded.sub },
-                { email: decoded.email }
-            ]
+            $or: [{ googleId: decoded.sub }, { email: decoded.email }]
         });
 
         if (user) {
-            // Update Google ID if user exists but doesn't have it
-            if (!user.googleId) {
-                user.googleId = decoded.sub;
-            }
-            // Update profile image if not set
-            if (!user.profileImage && decoded.picture) {
-                user.profileImage = decoded.picture;
-            }
-            // Update name if not set
-            if (!user.name && decoded.name) {
-                user.name = decoded.name;
-            }
+            if (!user.googleId) user.googleId = decoded.sub;
+            if (!user.profileImage && decoded.picture) user.profileImage = decoded.picture;
+            if (!user.name && decoded.name) user.name = decoded.name;
         } else {
-            // Create new user
             user = await User.create({
                 email: decoded.email,
-                name: decoded.name || decoded.email.split('@')[0],
+                name: decoded.name || decoded.email.split("@")[0],
                 profileImage: decoded.picture || "",
                 googleId: decoded.sub,
-                password: "", // OAuth users don't have a password
+                password: "",
             });
         }
 
         const tokens = generateToken(user._id.toString());
-
         user.refreshToken.push(tokens.refreshToken);
         await user.save();
 
-        res.status(200).json({
-            ...tokens,
-            user: formatUserResponse(user),
-        });
+        res.status(200).json({ ...tokens, user: formatUserResponse(user) });
     } catch (error) {
         console.error("Google login error:", error);
         return sendError(res, "Google login failed", 500);
@@ -194,7 +159,7 @@ const refreshToken = async (req: Request, res: Response) => {
     }
 
     try {
-        const secret: string = process.env.JWT_SECRET || "secretkey";
+        const secret = process.env.JWT_SECRET || "";
         const decoded: any = jwt.verify(refreshToken, secret);
 
         const user = await User.findById(decoded.userId);
@@ -203,7 +168,6 @@ const refreshToken = async (req: Request, res: Response) => {
         }
 
         if (!user.refreshToken.includes(refreshToken)) {
-            // Security: Clear all refresh tokens if invalid token is used
             user.refreshToken = [];
             await user.save();
             return sendError(res, "Invalid refresh token", 401);
@@ -211,15 +175,11 @@ const refreshToken = async (req: Request, res: Response) => {
 
         const tokens = generateToken(user._id.toString());
         user.refreshToken.push(tokens.refreshToken);
-        // Remove old refresh token
         user.refreshToken = user.refreshToken.filter(rt => rt !== refreshToken);
         await user.save();
 
-        res.status(200).json({
-            ...tokens,
-            user: formatUserResponse(user),
-        });
-    } catch (error) {
+        res.status(200).json({ ...tokens, user: formatUserResponse(user) });
+    } catch {
         return sendError(res, "Invalid refresh token", 401);
     }
 };
@@ -238,16 +198,11 @@ const logout = async (req: AuthRequest, res: Response) => {
             return sendError(res, "User not found", 404);
         }
 
-        if (refreshToken) {
-            // Remove specific refresh token
-            user.refreshToken = user.refreshToken.filter(rt => rt !== refreshToken);
-        } else {
-            // Remove all refresh tokens (logout from all devices)
-            user.refreshToken = [];
-        }
+        user.refreshToken = refreshToken
+            ? user.refreshToken.filter(rt => rt !== refreshToken)
+            : [];
 
         await user.save();
-
         res.status(200).json({ message: "Logged out successfully" });
     } catch (error) {
         console.error("Logout error:", error);

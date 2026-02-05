@@ -3,9 +3,8 @@ import Comment from "../model/commentModel";
 import Post from "../model/postModel";
 import { AuthRequest } from "../middleware/authMiddleware";
 
-const sendError = (res: Response, message: string, code?: number) => {
-    const errCode = code || 400;
-    res.status(errCode).json({ error: message });
+const sendError = (res: Response, message: string, code = 400) => {
+    res.status(code).json({ error: message });
 };
 
 interface PaginationQuery {
@@ -13,9 +12,6 @@ interface PaginationQuery {
     limit?: string;
 }
 
-/**
- * Get comments for a specific post
- */
 const getCommentsByPost = async (req: AuthRequest, res: Response) => {
     try {
         const { postId } = req.params;
@@ -24,7 +20,6 @@ const getCommentsByPost = async (req: AuthRequest, res: Response) => {
         const limitNum = Math.min(parseInt(limit), 50);
         const skip = (pageNum - 1) * limitNum;
 
-        // Verify post exists
         const post = await Post.findById(postId);
         if (!post) {
             return sendError(res, "Post not found", 404);
@@ -56,9 +51,6 @@ const getCommentsByPost = async (req: AuthRequest, res: Response) => {
     }
 };
 
-/**
- * Create a comment on a post
- */
 const createComment = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -70,10 +62,9 @@ const createComment = async (req: AuthRequest, res: Response) => {
         const { content } = req.body;
 
         if (!content || content.trim().length === 0) {
-            return sendError(res, "Comment content is required", 400);
+            return sendError(res, "Comment content is required");
         }
 
-        // Verify post exists
         const post = await Post.findById(postId);
         if (!post) {
             return sendError(res, "Post not found", 404);
@@ -85,7 +76,6 @@ const createComment = async (req: AuthRequest, res: Response) => {
             owner: userId,
         });
 
-        // Increment comment count on post
         post.commentsCount = (post.commentsCount || 0) + 1;
         await post.save();
 
@@ -100,9 +90,6 @@ const createComment = async (req: AuthRequest, res: Response) => {
     }
 };
 
-/**
- * Update a comment (only owner can update)
- */
 const updateComment = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -139,9 +126,6 @@ const updateComment = async (req: AuthRequest, res: Response) => {
     }
 };
 
-/**
- * Delete a comment (only owner can delete)
- */
 const deleteComment = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -160,7 +144,6 @@ const deleteComment = async (req: AuthRequest, res: Response) => {
             return sendError(res, "Forbidden - You can only delete your own comments", 403);
         }
 
-        // Decrement comment count on post
         await Post.findByIdAndUpdate(comment.postId, {
             $inc: { commentsCount: -1 },
         });
@@ -174,9 +157,6 @@ const deleteComment = async (req: AuthRequest, res: Response) => {
     }
 };
 
-/**
- * Get a single comment by ID
- */
 const getCommentById = async (req: AuthRequest, res: Response) => {
     try {
         const { id } = req.params;

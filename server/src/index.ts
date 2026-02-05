@@ -2,11 +2,7 @@ import express, { Express } from "express";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
-
-// Load environment variables based on NODE_ENV
-dotenv.config({ path: ".env" });
-
-// Import routes
+import cors from "cors";
 import commentRoutes from "./routes/commentRoutes";
 import authRoutes from "./routes/authRoutes";
 import postRoutes from "./routes/postRoutes";
@@ -14,12 +10,13 @@ import userRoutes from "./routes/userRoutes";
 import aiRoutes from "./routes/aiRoutes";
 import multerRoute from "./routes/multerRoutes";
 import { specs, swaggerUi } from "./swagger";
-import cors from "cors";
+
+dotenv.config({ path: ".env" });
 
 const app = express();
 
 const initApp = () => {
-  const promise = new Promise<Express>((resolve, reject) => {
+  return new Promise<Express>((resolve, reject) => {
     app.use(express.urlencoded({ extended: false }));
     app.use(express.json());
 
@@ -30,7 +27,7 @@ const initApp = () => {
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true);
         } else {
-          callback(new Error('Not allowed by CORS'));
+          callback(new Error("Not allowed by CORS"));
         }
       },
       credentials: true,
@@ -38,14 +35,10 @@ const initApp = () => {
       allowedHeaders: ["Origin", "X-Requested-With", "Content-Type", "Accept", "Authorization"]
     }));
 
-    // Static files
     app.use("/public", express.static(path.join(__dirname, "../public")));
     app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
-
-    // File upload route
     app.use("/upload", multerRoute);
 
-    // Swagger Documentation (only in non-production or if explicitly enabled)
     if (process.env.NODE_ENV !== "production" || process.env.ENABLE_SWAGGER === "true") {
       app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
         explorer: true,
@@ -59,14 +52,12 @@ const initApp = () => {
       });
     }
 
-    // API Routes
     app.use("/auth", authRoutes);
     app.use("/user", userRoutes);
     app.use("/post", postRoutes);
     app.use("/comment", commentRoutes);
     app.use("/ai", aiRoutes);
 
-    // Health check endpoint
     app.get("/health", (req, res) => {
       res.status(200).json({
         status: "ok",
@@ -75,39 +66,23 @@ const initApp = () => {
       });
     });
 
-    // 404 handler
     app.use((req, res) => {
       res.status(404).json({ error: "Not Found" });
     });
 
-    // Database connection
     const dbUri = process.env.MONGODB_URI;
     if (!dbUri) {
-      console.error("MONGODB_URI is not defined in the environment variables.");
       reject(new Error("MONGODB_URI is not defined"));
       return;
     }
 
     mongoose
       .connect(dbUri)
-      .then(() => {
-        console.log("Connected to MongoDB");
-        resolve(app);
-      })
-      .catch((error) => {
-        console.error("MongoDB connection error:", error);
-        reject(error);
-      });
+      .then(() => resolve(app))
+      .catch((error) => reject(error));
 
-    const db = mongoose.connection;
-    db.on("error", (error) => {
-      console.error("MongoDB error:", error);
-    });
-    db.on("disconnected", () => {
-      console.log("MongoDB disconnected");
-    });
+    mongoose.connection.on("error", (error) => console.error("MongoDB error:", error));
   });
-  return promise;
 };
 
 export default initApp;

@@ -27,7 +27,6 @@ beforeAll(async () => {
   await User.deleteMany({ email: testUser.email });
   await Post.deleteMany({});
 
-  // Register user
   const res = await request(app)
     .post("/auth/register")
     .send(testUser);
@@ -203,7 +202,6 @@ describe("Posts API", () => {
     });
 
     test("should fail to delete without authentication", async () => {
-      // Create a new post
       const createRes = await request(app)
         .post("/post")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -214,12 +212,10 @@ describe("Posts API", () => {
 
       expect(res.status).toBe(401);
 
-      // Cleanup
       await Post.findByIdAndDelete(createRes.body._id);
     });
 
     test("should fail to delete another user's post", async () => {
-      // Create another user
       const otherUser = {
         email: "otherpostuser@example.com",
         password: "password123",
@@ -230,13 +226,11 @@ describe("Posts API", () => {
         .send(otherUser);
       const otherToken = otherRegisterRes.body.token;
 
-      // Create a post with the first user
       const createRes = await request(app)
         .post("/post")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ content: "First user's post" });
 
-      // Try to delete with second user
       const res = await request(app)
         .delete(`/post/${createRes.body._id}`)
         .set("Authorization", `Bearer ${otherToken}`);
@@ -244,7 +238,6 @@ describe("Posts API", () => {
       expect(res.status).toBe(403);
       expect(res.body.error).toContain("Forbidden");
 
-      // Cleanup
       await Post.findByIdAndDelete(createRes.body._id);
       await User.deleteMany({ email: otherUser.email });
     });
@@ -283,7 +276,6 @@ describe("Posts API", () => {
     });
 
     test("should fail to update another user's post", async () => {
-      // Create another user
       const otherUser = {
         email: "anotheruserpost@example.com",
         password: "password123",
@@ -294,13 +286,11 @@ describe("Posts API", () => {
         .send(otherUser);
       const otherToken = otherRegisterRes.body.token;
 
-      // Create a post with the first user
       const createRes = await request(app)
         .post("/post")
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ content: "Original post" });
 
-      // Try to update with second user
       const res = await request(app)
         .put(`/post/${createRes.body._id}`)
         .set("Authorization", `Bearer ${otherToken}`)
@@ -309,7 +299,6 @@ describe("Posts API", () => {
       expect(res.status).toBe(403);
       expect(res.body.error).toContain("Forbidden");
 
-      // Cleanup
       await Post.findByIdAndDelete(createRes.body._id);
       await User.deleteMany({ email: otherUser.email });
     });
@@ -352,7 +341,6 @@ describe("Posts API", () => {
     });
 
     test("should include like status in posts when authenticated", async () => {
-      // Create a post and like it
       const createRes = await request(app)
         .post("/post")
         .set("Authorization", `Bearer ${accessToken}`)
@@ -369,7 +357,6 @@ describe("Posts API", () => {
       expect(res.status).toBe(200);
       expect(res.body.isLiked).toBe(true);
 
-      // Cleanup
       await Post.findByIdAndDelete(createRes.body._id);
     });
 

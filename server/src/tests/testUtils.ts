@@ -17,7 +17,6 @@ export const userData: UserData = {
     name: "Test User",
 };
 
-// Post types for social network
 export type PostData = {
     content: string;
     image?: string;
@@ -36,7 +35,6 @@ export const singlePostData: PostData = {
     image: "/uploads/test.jpg",
 };
 
-// Comments for posts
 export type CommentData = {
     content: string;
     postId?: string;

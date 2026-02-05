@@ -43,11 +43,9 @@ const postSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Index for efficient pagination and querying
 postSchema.index({ createdAt: -1 });
 postSchema.index({ owner: 1, createdAt: -1 });
 
-// Virtual for checking if populated likes include a user
 postSchema.methods.isLikedBy = function (userId: mongoose.Types.ObjectId): boolean {
   return this.likes.some((like: mongoose.Types.ObjectId) => like.equals(userId));
 };

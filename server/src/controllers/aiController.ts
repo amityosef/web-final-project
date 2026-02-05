@@ -2,25 +2,21 @@ import { Response } from "express";
 import Post from "../model/postModel";
 import { AuthRequest } from "../middleware/authMiddleware";
 
-// Simple in-memory rate limiter
 interface RateLimitEntry {
     count: number;
     resetTime: number;
 }
 
 const rateLimitMap = new Map<string, RateLimitEntry>();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 requests per minute per user
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 10;
 
 const checkRateLimit = (userId: string): boolean => {
     const now = Date.now();
     const entry = rateLimitMap.get(userId);
 
     if (!entry || now > entry.resetTime) {
-        rateLimitMap.set(userId, {
-            count: 1,
-            resetTime: now + RATE_LIMIT_WINDOW,
-        });
+        rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
         return true;
     }
 
@@ -32,17 +28,14 @@ const checkRateLimit = (userId: string): boolean => {
     return true;
 };
 
-const sendError = (res: Response, message: string, code?: number) => {
-    const errCode = code || 400;
-    res.status(errCode).json({ error: message });
+const sendError = (res: Response, message: string, code = 400) => {
+    res.status(code).json({ error: message });
 };
 
-// AI Provider abstraction
 interface AIProvider {
     generateResponse(prompt: string): Promise<string>;
 }
 
-// Gemini AI Provider
 class GeminiProvider implements AIProvider {
     private apiKey: string;
     private baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
@@ -54,19 +47,10 @@ class GeminiProvider implements AIProvider {
     async generateResponse(prompt: string): Promise<string> {
         const response = await fetch(`${this.baseUrl}?key=${this.apiKey}`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [
-                    {
-                        parts: [{ text: prompt }],
-                    },
-                ],
-                generationConfig: {
-                    temperature: 0.7,
-                    maxOutputTokens: 1024,
-                },
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
             }),
         });
 
@@ -80,7 +64,6 @@ class GeminiProvider implements AIProvider {
     }
 }
 
-// OpenAI Provider
 class OpenAIProvider implements AIProvider {
     private apiKey: string;
     private baseUrl = "https://api.openai.com/v1/chat/completions";
@@ -99,14 +82,8 @@ class OpenAIProvider implements AIProvider {
             body: JSON.stringify({
                 model: "gpt-3.5-turbo",
                 messages: [
-                    {
-                        role: "system",
-                        content: "You are a helpful assistant that helps users search and analyze social media posts. Respond concisely and helpfully.",
-                    },
-                    {
-                        role: "user",
-                        content: prompt,
-                    },
+                    { role: "system", content: "You are a helpful assistant that helps users search and analyze social media posts. Respond concisely and helpfully." },
+                    { role: "user", content: prompt },
                 ],
                 temperature: 0.7,
                 max_tokens: 1024,
@@ -123,24 +100,29 @@ class OpenAIProvider implements AIProvider {
     }
 }
 
-// Get the appropriate AI provider based on environment
 const getAIProvider = (): AIProvider | null => {
     const geminiKey = process.env.GEMINI_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
 
-    if (geminiKey) {
-        return new GeminiProvider(geminiKey);
-    }
-    if (openaiKey) {
-        return new OpenAIProvider(openaiKey);
-    }
+    if (geminiKey) return new GeminiProvider(geminiKey);
+    if (openaiKey) return new OpenAIProvider(openaiKey);
     return null;
 };
 
-/**
- * Smart Search - Search posts using natural language
- * Converts user's natural language query into search terms and returns relevant posts
- */
+const stripLikes = (post: any, userId?: string) => ({
+    ...post,
+    isLiked: userId
+        ? post.likes.some((like: any) => like.toString() === userId)
+        : false,
+    likes: undefined,
+});
+
+const parseJsonFromAI = (text: string): any | null => {
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return null;
+    return JSON.parse(jsonMatch[0]);
+};
+
 const smartSearch = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -148,7 +130,6 @@ const smartSearch = async (req: AuthRequest, res: Response) => {
             return sendError(res, "Unauthorized", 401);
         }
 
-        // Check rate limit
         if (!checkRateLimit(userId.toString())) {
             return sendError(res, "Rate limit exceeded. Please try again later.", 429);
         }
@@ -156,16 +137,14 @@ const smartSearch = async (req: AuthRequest, res: Response) => {
         const { query } = req.body;
 
         if (!query || query.trim().length === 0) {
-            return sendError(res, "Search query is required", 400);
+            return sendError(res, "Search query is required");
         }
 
         const aiProvider = getAIProvider();
         if (!aiProvider) {
-            // Fallback to basic text search if no AI provider
             return basicSearch(req, res, query);
         }
 
-        // Use AI to understand the query and extract search terms
         const prompt = `You are helping a user search through social media posts. The user wants to find posts about: "${query}"
 
 Extract the key search terms, topics, or themes from this query. Also identify any sentiment or tone the user might be looking for.
@@ -181,18 +160,11 @@ Respond in JSON format only:
         try {
             const aiResponse = await aiProvider.generateResponse(prompt);
 
-            // Parse AI response
             let parsedResponse;
             try {
-                // Extract JSON from the response
-                const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    parsedResponse = JSON.parse(jsonMatch[0]);
-                } else {
-                    throw new Error("No JSON found in response");
-                }
-            } catch (parseError) {
-                // If parsing fails, use the original query
+                parsedResponse = parseJsonFromAI(aiResponse);
+                if (!parsedResponse) throw new Error("No JSON found");
+            } catch {
                 parsedResponse = {
                     searchTerms: query.split(" ").filter((t: string) => t.length > 2),
                     topics: [],
@@ -201,34 +173,20 @@ Respond in JSON format only:
                 };
             }
 
-            // Build search query for MongoDB
             const searchTerms = [...(parsedResponse.searchTerms || []), ...(parsedResponse.topics || [])];
-            const regexTerms = searchTerms.map((term: string) => new RegExp(term, "i"));
 
             const posts = await Post.find({
-                $or: [
-                    { content: { $in: regexTerms } },
-                    ...searchTerms.map((term: string) => ({
-                        content: { $regex: term, $options: "i" }
-                    })),
-                ],
+                $or: searchTerms.map((term: string) => ({
+                    content: { $regex: term, $options: "i" },
+                })),
             })
                 .sort({ likesCount: -1, createdAt: -1 })
                 .limit(20)
                 .populate("owner", "name email profileImage")
                 .lean();
 
-            // Add isLiked field
-            const postsWithLikeStatus = posts.map((post: any) => ({
-                ...post,
-                isLiked: post.likes.some((like: any) =>
-                    like.toString() === userId.toString()
-                ),
-                likes: undefined,
-            }));
-
             res.status(200).json({
-                posts: postsWithLikeStatus,
+                posts: posts.map((post: any) => stripLikes(post, userId.toString())),
                 aiAnalysis: {
                     searchTerms: parsedResponse.searchTerms,
                     topics: parsedResponse.topics,
@@ -239,7 +197,6 @@ Respond in JSON format only:
             });
         } catch (aiError) {
             console.error("AI processing error:", aiError);
-            // Fallback to basic search on AI error
             return basicSearch(req, res, query);
         }
     } catch (error) {
@@ -248,16 +205,13 @@ Respond in JSON format only:
     }
 };
 
-/**
- * Basic text search fallback
- */
 const basicSearch = async (req: AuthRequest, res: Response, query: string) => {
-    const userId = req.user?._id;
+    const userId = req.user?._id?.toString();
     const searchTerms = query.split(" ").filter((t: string) => t.length > 2);
 
     const posts = await Post.find({
         $or: searchTerms.map((term: string) => ({
-            content: { $regex: term, $options: "i" }
+            content: { $regex: term, $options: "i" },
         })),
     })
         .sort({ likesCount: -1, createdAt: -1 })
@@ -265,25 +219,14 @@ const basicSearch = async (req: AuthRequest, res: Response, query: string) => {
         .populate("owner", "name email profileImage")
         .lean();
 
-    const postsWithLikeStatus = posts.map((post: any) => ({
-        ...post,
-        isLiked: userId ? post.likes.some((like: any) =>
-            like.toString() === userId.toString()
-        ) : false,
-        likes: undefined,
-    }));
-
     res.status(200).json({
-        posts: postsWithLikeStatus,
+        posts: posts.map((post: any) => stripLikes(post, userId)),
         aiAnalysis: null,
         totalResults: posts.length,
         fallback: true,
     });
 };
 
-/**
- * Analyze post content using AI
- */
 const analyzePost = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -291,7 +234,6 @@ const analyzePost = async (req: AuthRequest, res: Response) => {
             return sendError(res, "Unauthorized", 401);
         }
 
-        // Check rate limit
         if (!checkRateLimit(userId.toString())) {
             return sendError(res, "Rate limit exceeded. Please try again later.", 429);
         }
@@ -331,13 +273,9 @@ Respond in JSON format only:
 
             let parsedResponse;
             try {
-                const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    parsedResponse = JSON.parse(jsonMatch[0]);
-                } else {
-                    throw new Error("No JSON found");
-                }
-            } catch (parseError) {
+                parsedResponse = parseJsonFromAI(aiResponse);
+                if (!parsedResponse) throw new Error("No JSON found");
+            } catch {
                 parsedResponse = {
                     topic: "Unable to determine",
                     sentiment: "neutral",
@@ -346,10 +284,7 @@ Respond in JSON format only:
                 };
             }
 
-            res.status(200).json({
-                postId,
-                analysis: parsedResponse,
-            });
+            res.status(200).json({ postId, analysis: parsedResponse });
         } catch (aiError) {
             console.error("AI analysis error:", aiError);
             return sendError(res, "AI analysis failed", 503);
@@ -360,9 +295,6 @@ Respond in JSON format only:
     }
 };
 
-/**
- * Generate post suggestions based on user's interests
- */
 const generateSuggestions = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -370,7 +302,6 @@ const generateSuggestions = async (req: AuthRequest, res: Response) => {
             return sendError(res, "Unauthorized", 401);
         }
 
-        // Check rate limit
         if (!checkRateLimit(userId.toString())) {
             return sendError(res, "Rate limit exceeded. Please try again later.", 429);
         }
@@ -382,7 +313,7 @@ const generateSuggestions = async (req: AuthRequest, res: Response) => {
             return sendError(res, "AI service not available", 503);
         }
 
-        const prompt = `Generate 3 creative post ideas for a social media user interested in: "${topic || 'general topics'}"
+        const prompt = `Generate 3 creative post ideas for a social media user interested in: "${topic || "general topics"}"
 
 Each post should be engaging and suitable for a social platform.
 
@@ -400,17 +331,11 @@ Respond in JSON format only:
 
             let parsedResponse;
             try {
-                const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    parsedResponse = JSON.parse(jsonMatch[0]);
-                } else {
-                    throw new Error("No JSON found");
-                }
-            } catch (parseError) {
+                parsedResponse = parseJsonFromAI(aiResponse);
+                if (!parsedResponse) throw new Error("No JSON found");
+            } catch {
                 parsedResponse = {
-                    suggestions: [
-                        { title: "Unable to generate", content: "Please try again later." }
-                    ],
+                    suggestions: [{ title: "Unable to generate", content: "Please try again later." }],
                 };
             }
 

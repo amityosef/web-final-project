@@ -29,7 +29,6 @@ const commentSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Index for efficient querying by post
 commentSchema.index({ postId: 1, createdAt: -1 });
 
 export default mongoose.model<IComment>("comment", commentSchema);

@@ -32,7 +32,6 @@ beforeAll(async () => {
   await Post.deleteMany({});
   await User.deleteMany({ email: testUser.email });
 
-  // Register user
   const registerRes = await request(app)
     .post("/auth/register")
     .send(testUser);
@@ -40,7 +39,6 @@ beforeAll(async () => {
   accessToken = registerRes.body.token;
   userId = registerRes.body.user._id;
 
-  // Create a post for comments
   const postRes = await request(app)
     .post("/post")
     .set("Authorization", `Bearer ${accessToken}`)
@@ -169,7 +167,6 @@ describe("Comments API", () => {
 
   describe("DELETE /comment/:id", () => {
     test("should delete own comment", async () => {
-      // First check post comment count
       const postBefore = await request(app).get(`/post/${postId}`);
       const countBefore = postBefore.body.commentsCount;
 
@@ -180,7 +177,6 @@ describe("Comments API", () => {
       expect(res.status).toBe(200);
       expect(res.body.message).toBe("Comment deleted successfully");
 
-      // Verify comment count decreased
       const postAfter = await request(app).get(`/post/${postId}`);
       expect(postAfter.body.commentsCount).toBe(countBefore - 1);
     });
@@ -194,7 +190,6 @@ describe("Comments API", () => {
     });
 
     test("should fail to delete without authentication", async () => {
-      // Create a new comment first
       const createRes = await request(app)
         .post(`/comment/post/${postId}`)
         .set("Authorization", `Bearer ${accessToken}`)
@@ -205,12 +200,10 @@ describe("Comments API", () => {
 
       expect(res.status).toBe(401);
 
-      // Cleanup
       await Comments.findByIdAndDelete(createRes.body._id);
     });
 
     test("should fail to delete another user's comment", async () => {
-      // Create another user
       const otherUser = {
         email: "othercommentuser@example.com",
         password: "password123",
@@ -221,13 +214,11 @@ describe("Comments API", () => {
         .send(otherUser);
       const otherToken = otherRegisterRes.body.token;
 
-      // Create a comment with the first user
       const createRes = await request(app)
         .post(`/comment/post/${postId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ content: "First user's comment" });
 
-      // Try to delete with second user
       const res = await request(app)
         .delete(`/comment/${createRes.body._id}`)
         .set("Authorization", `Bearer ${otherToken}`);
@@ -235,7 +226,6 @@ describe("Comments API", () => {
       expect(res.status).toBe(403);
       expect(res.body.error).toContain("Forbidden");
 
-      // Cleanup
       await Comments.findByIdAndDelete(createRes.body._id);
       await User.deleteMany({ email: otherUser.email });
     });
@@ -262,7 +252,6 @@ describe("Comments API", () => {
     });
 
     test("should fail to update another user's comment", async () => {
-      // Create another user
       const otherUser = {
         email: "anotherusercomment@example.com",
         password: "password123",
@@ -273,13 +262,11 @@ describe("Comments API", () => {
         .send(otherUser);
       const otherToken = otherRegisterRes.body.token;
 
-      // Create a comment with the first user
       const createRes = await request(app)
         .post(`/comment/post/${postId}`)
         .set("Authorization", `Bearer ${accessToken}`)
         .send({ content: "Original comment" });
 
-      // Try to update with second user
       const res = await request(app)
         .put(`/comment/${createRes.body._id}`)
         .set("Authorization", `Bearer ${otherToken}`)
@@ -288,13 +275,11 @@ describe("Comments API", () => {
       expect(res.status).toBe(403);
       expect(res.body.error).toContain("Forbidden");
 
-      // Cleanup
       await Comments.findByIdAndDelete(createRes.body._id);
       await User.deleteMany({ email: otherUser.email });
     });
 
     test("should get comments with pagination limit enforced", async () => {
-      // Create multiple comments
       for (let i = 0; i < 5; i++) {
         await request(app)
           .post(`/comment/post/${postId}`)

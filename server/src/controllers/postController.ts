@@ -1,12 +1,11 @@
 import { Response } from "express";
-import Post, { IPost } from "../model/postModel";
+import Post from "../model/postModel";
 import Comment from "../model/commentModel";
 import { AuthRequest } from "../middleware/authMiddleware";
 import mongoose from "mongoose";
 
-const sendError = (res: Response, message: string, code?: number) => {
-    const errCode = code || 400;
-    res.status(errCode).json({ error: message });
+const sendError = (res: Response, message: string, code = 400) => {
+    res.status(code).json({ error: message });
 };
 
 interface PaginationQuery {
@@ -15,20 +14,31 @@ interface PaginationQuery {
     owner?: string;
 }
 
-/**
- * Get all posts with pagination
- */
+const stripLikes = (post: any, userId?: string) => ({
+    ...post,
+    isLiked: userId
+        ? post.likes.some((like: mongoose.Types.ObjectId) => like.toString() === userId)
+        : false,
+    likes: undefined,
+});
+
+const buildPagination = (page: number, limit: number, total: number, fetchedCount: number, skip: number) => ({
+    page,
+    limit,
+    total,
+    pages: Math.ceil(total / limit),
+    hasMore: skip + fetchedCount < total,
+});
+
 const getPosts = async (req: AuthRequest, res: Response) => {
     try {
         const { page = "1", limit = "10", owner } = req.query as PaginationQuery;
         const pageNum = parseInt(page);
-        const limitNum = Math.min(parseInt(limit), 50); // Max 50 posts per page
+        const limitNum = Math.min(parseInt(limit), 50);
         const skip = (pageNum - 1) * limitNum;
 
         const filter: any = {};
-        if (owner) {
-            filter.owner = owner;
-        }
+        if (owner) filter.owner = owner;
 
         const [posts, total] = await Promise.all([
             Post.find(filter)
@@ -40,25 +50,11 @@ const getPosts = async (req: AuthRequest, res: Response) => {
             Post.countDocuments(filter),
         ]);
 
-        // Add isLiked field for authenticated users
-        const userId = req.user?._id;
-        const postsWithLikeStatus = posts.map((post: any) => ({
-            ...post,
-            isLiked: userId ? post.likes.some((like: mongoose.Types.ObjectId) =>
-                like.toString() === userId.toString()
-            ) : false,
-            likes: undefined, // Don't send full likes array
-        }));
+        const userId = req.user?._id?.toString();
 
         res.status(200).json({
-            posts: postsWithLikeStatus,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total,
-                pages: Math.ceil(total / limitNum),
-                hasMore: skip + posts.length < total,
-            },
+            posts: posts.map((post: any) => stripLikes(post, userId)),
+            pagination: buildPagination(pageNum, limitNum, total, posts.length, skip),
         });
     } catch (error) {
         console.error("Get posts error:", error);
@@ -66,14 +62,9 @@ const getPosts = async (req: AuthRequest, res: Response) => {
     }
 };
 
-/**
- * Get single post by ID
- */
 const getPostById = async (req: AuthRequest, res: Response) => {
     try {
-        const { id } = req.params;
-
-        const post = await Post.findById(id)
+        const post = await Post.findById(req.params.id)
             .populate("owner", "name email profileImage")
             .lean();
 
@@ -81,25 +72,13 @@ const getPostById = async (req: AuthRequest, res: Response) => {
             return sendError(res, "Post not found", 404);
         }
 
-        const userId = req.user?._id;
-        const postWithLikeStatus = {
-            ...post,
-            isLiked: userId ? (post as any).likes.some((like: mongoose.Types.ObjectId) =>
-                like.toString() === userId.toString()
-            ) : false,
-            likes: undefined,
-        };
-
-        res.status(200).json(postWithLikeStatus);
+        res.status(200).json(stripLikes(post, req.user?._id?.toString()));
     } catch (error) {
         console.error("Get post error:", error);
         return sendError(res, "Failed to get post", 500);
     }
 };
 
-/**
- * Create a new post
- */
 const createPost = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -110,7 +89,7 @@ const createPost = async (req: AuthRequest, res: Response) => {
         const { content, image } = req.body;
 
         if (!content || content.trim().length === 0) {
-            return sendError(res, "Post content is required", 400);
+            return sendError(res, "Post content is required");
         }
 
         const post = await Post.create({
@@ -126,20 +105,13 @@ const createPost = async (req: AuthRequest, res: Response) => {
             .populate("owner", "name email profileImage")
             .lean();
 
-        res.status(201).json({
-            ...populatedPost,
-            isLiked: false,
-            likes: undefined,
-        });
+        res.status(201).json({ ...populatedPost, isLiked: false, likes: undefined });
     } catch (error) {
         console.error("Create post error:", error);
         return sendError(res, "Failed to create post", 500);
     }
 };
 
-/**
- * Update a post (only owner can update)
- */
 const updatePost = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -159,12 +131,8 @@ const updatePost = async (req: AuthRequest, res: Response) => {
             return sendError(res, "Forbidden - You can only edit your own posts", 403);
         }
 
-        if (content !== undefined) {
-            post.content = content.trim();
-        }
-        if (image !== undefined) {
-            post.image = image;
-        }
+        if (content !== undefined) post.content = content.trim();
+        if (image !== undefined) post.image = image;
 
         await post.save();
 
@@ -172,22 +140,13 @@ const updatePost = async (req: AuthRequest, res: Response) => {
             .populate("owner", "name email profileImage")
             .lean();
 
-        res.status(200).json({
-            ...updatedPost,
-            isLiked: (updatedPost as any).likes.some((like: mongoose.Types.ObjectId) =>
-                like.toString() === userId.toString()
-            ),
-            likes: undefined,
-        });
+        res.status(200).json(stripLikes(updatedPost, userId.toString()));
     } catch (error) {
         console.error("Update post error:", error);
         return sendError(res, "Failed to update post", 500);
     }
 };
 
-/**
- * Delete a post (only owner can delete)
- */
 const deletePost = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -206,10 +165,7 @@ const deletePost = async (req: AuthRequest, res: Response) => {
             return sendError(res, "Forbidden - You can only delete your own posts", 403);
         }
 
-        // Delete all comments associated with this post
         await Comment.deleteMany({ postId: id });
-
-        // Delete the post
         await Post.findByIdAndDelete(id);
 
         res.status(200).json({ message: "Post deleted successfully" });
@@ -219,9 +175,6 @@ const deletePost = async (req: AuthRequest, res: Response) => {
     }
 };
 
-/**
- * Toggle like on a post
- */
 const toggleLike = async (req: AuthRequest, res: Response) => {
     try {
         const userId = req.user?._id;
@@ -238,22 +191,21 @@ const toggleLike = async (req: AuthRequest, res: Response) => {
 
         const userObjectId = new mongoose.Types.ObjectId(userId);
         const likeIndex = post.likes.findIndex((like) => like.equals(userObjectId));
+        const isLiking = likeIndex === -1;
 
-        if (likeIndex > -1) {
-            // Unlike - remove from array
+        if (isLiking) {
+            post.likes.push(userObjectId);
+            post.likesCount += 1;
+        } else {
             post.likes.splice(likeIndex, 1);
             post.likesCount = Math.max(0, post.likesCount - 1);
-        } else {
-            // Like - add to array
-            post.likes.push(userObjectId);
-            post.likesCount = post.likesCount + 1;
         }
 
         await post.save();
 
         res.status(200).json({
             postId: id,
-            isLiked: likeIndex === -1, // If it wasn't found, now it's liked
+            isLiked: isLiking,
             likesCount: post.likesCount,
         });
     } catch (error) {
@@ -262,9 +214,6 @@ const toggleLike = async (req: AuthRequest, res: Response) => {
     }
 };
 
-/**
- * Get user's posts
- */
 const getUserPosts = async (req: AuthRequest, res: Response) => {
     try {
         const { userId } = req.params;
@@ -283,24 +232,11 @@ const getUserPosts = async (req: AuthRequest, res: Response) => {
             Post.countDocuments({ owner: userId }),
         ]);
 
-        const currentUserId = req.user?._id;
-        const postsWithLikeStatus = posts.map((post: any) => ({
-            ...post,
-            isLiked: currentUserId ? post.likes.some((like: mongoose.Types.ObjectId) =>
-                like.toString() === currentUserId.toString()
-            ) : false,
-            likes: undefined,
-        }));
+        const currentUserId = req.user?._id?.toString();
 
         res.status(200).json({
-            posts: postsWithLikeStatus,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total,
-                pages: Math.ceil(total / limitNum),
-                hasMore: skip + posts.length < total,
-            },
+            posts: posts.map((post: any) => stripLikes(post, currentUserId)),
+            pagination: buildPagination(pageNum, limitNum, total, posts.length, skip),
         });
     } catch (error) {
         console.error("Get user posts error:", error);
