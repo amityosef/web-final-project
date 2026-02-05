@@ -86,7 +86,7 @@ A full-stack social network application built with Node.js/Express backend and R
 
 #### Server (.env.dev)
 ```env
-PORT=3000
+PORT=4000
 MONGO_URI=mongodb://localhost:27017/social-network
 JWT_ACCESS_SECRET=your_access_secret
 JWT_REFRESH_SECRET=your_refresh_secret
@@ -100,7 +100,7 @@ OPENAI_API_KEY=your_openai_api_key
 
 #### Client (.env)
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:4000
 VITE_GOOGLE_CLIENT_ID=your_google_client_id
 ```
 
@@ -133,7 +133,7 @@ VITE_GOOGLE_CLIENT_ID=your_google_client_id
 cd server
 npm run dev
 ```
-Server runs on http://localhost:3000
+Server runs on http://localhost:4000
 
 **Client:**
 ```bash
@@ -168,7 +168,7 @@ npm test
 ### API Documentation
 
 When the server is running, visit:
-- http://localhost:3000/api-docs (Swagger UI)
+- http://localhost:4000/api-docs (Swagger UI)
 
 ## API Endpoints
 

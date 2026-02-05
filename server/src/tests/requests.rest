@@ -1,19 +1,19 @@
 ###
 
-GET http://localhost:3000/movie
+GET http://localhost:4000/movie
 
 ###
 
-GET http://localhost:3000/movie?releaseYear=2010
+GET http://localhost:4000/movie?releaseYear=2010
 
 ###
 
-GET http://localhost:3000/movie/69133c28251f35bcbc4206a6
+GET http://localhost:4000/movie/69133c28251f35bcbc4206a6
 
 
 ###
 
-POST http://localhost:3000/movie
+POST http://localhost:4000/movie
 Authorization: Bearer your_jwt_token_here
 Content-Type: application/json
 
@@ -24,11 +24,11 @@ Content-Type: application/json
 
 ###
 
-DELETE http://localhost:3000/movie/69133c28251f35bcbc4206a6
+DELETE http://localhost:4000/movie/69133c28251f35bcbc4206a6
 
 ###
 
-PUT http://localhost:3000/movie/69133cc67e0a6f1ddc7f1ec7
+PUT http://localhost:4000/movie/69133cc67e0a6f1ddc7f1ec7
 Content-Type: application/json
 
 {

@@ -11,17 +11,17 @@ initApp().then((app) => {
       console.log(`🔒 HTTPS Server is running on https://localhost:${process.env.PORT}`);
       console.log(`📚 API Documentation: https://localhost:${process.env.PORT}/api-docs`);
     })
+  } else {
+    const httpsOptions = {
+      key: fs.readFileSync(path.join(__dirname, "../../../client-key.pem")),
+      cert: fs.readFileSync(path.join(__dirname, "../../../client-cert.pem")),
+    };
+
+    https.createServer(httpsOptions, app).listen(process.env.HTTPS_PORT, () => {
+      console.log(`🔒 HTTPS Server is running on https://localhost:${process.env.HTTPS_PORT}`);
+      console.log(`📚 API Documentation: https://localhost:${process.env.HTTPS_PORT}/api-docs`);
+    });
   }
-
-  const httpsOptions = {
-    key: fs.readFileSync(path.join(__dirname, "../../../client-key.pem")),
-    cert: fs.readFileSync(path.join(__dirname, "../../../client-cert.pem")),
-  };
-
-  https.createServer(httpsOptions, app).listen(process.env.HTTPS_PORT, () => {
-    console.log(`🔒 HTTPS Server is running on https://localhost:${process.env.HTTPS_PORT}`);
-    console.log(`📚 API Documentation: https://localhost:${process.env.HTTPS_PORT}/api-docs`);
-  });
 }).catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
