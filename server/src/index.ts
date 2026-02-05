@@ -7,7 +7,6 @@ import path from "path";
 dotenv.config({ path: ".env" });
 
 // Import routes
-import movieRoutes from "./routes/movieRoutes";
 import commentRoutes from "./routes/commentRoutes";
 import authRoutes from "./routes/authRoutes";
 import postRoutes from "./routes/postRoutes";
@@ -66,7 +65,6 @@ const initApp = () => {
     app.use("/post", postRoutes);
     app.use("/comment", commentRoutes);
     app.use("/ai", aiRoutes);
-    app.use("/movie", movieRoutes); // Legacy route, kept for backwards compatibility
 
     // Health check endpoint
     app.get("/health", (req, res) => {

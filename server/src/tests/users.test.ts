@@ -150,5 +150,99 @@ describe("User Profile API", () => {
       expect(res.body.name).toBe("Final Name");
       expect(res.body.email).toBe(testUser.email); // Should remain unchanged
     });
+
+    test("should fail to update non-existent user", async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .put(`/user/${fakeId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "New Name" });
+
+      expect(res.status).toBe(403);
+    });
+
+    test("should trim whitespace from name", async () => {
+      const res = await request(app)
+        .put(`/user/${userId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "  Trimmed Name  " });
+
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe("Trimmed Name");
+    });
+  });
+
+  describe("Additional edge cases", () => {
+    test("should get profile with invalid ID format", async () => {
+      const res = await request(app)
+        .get(`/user/invalidid123`);
+
+      expect(res.status).toBe(500);
+    });
+
+    test("should handle get my profile when user doesn't exist", async () => {
+      // This is an edge case that shouldn't happen in normal flow
+      // but tests the error handling in getMyProfile
+
+      // Register a temporary user
+      const tempUser = await request(app)
+        .post("/auth/register")
+        .send({
+          email: "tempuser@test.com",
+          password: "password123"
+        });
+
+      const tempToken = tempUser.body.token;
+      const tempUserId = tempUser.body.user._id;
+
+      // Delete the user directly from DB
+      await User.findByIdAndDelete(tempUserId);
+
+      // Try to get profile with valid token but deleted user
+      const res = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${tempToken}`);
+
+      expect(res.status).toBe(404);
+    });
+
+    test("should update profile image only", async () => {
+      const res = await request(app)
+        .put(`/user/${userId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ profileImage: "/new/image.jpg" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.profileImage).toBe("/new/image.jpg");
+    });
+
+    test("should update name only", async () => {
+      const res = await request(app)
+        .put(`/user/${userId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "Name Only Update" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.name).toBe("Name Only Update");
+    });
+
+    test("should return user profile without sensitive fields", async () => {
+      const res = await request(app)
+        .get(`/user/${userId}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("password");
+      expect(res.body).not.toHaveProperty("refreshToken");
+    });
+
+    test("should get my profile without sensitive fields", async () => {
+      const res = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("password");
+      expect(res.body).not.toHaveProperty("refreshToken");
+    });
   });
 });

@@ -201,5 +201,191 @@ describe("Posts API", () => {
 
       expect(res.status).toBe(404);
     });
+
+    test("should fail to delete without authentication", async () => {
+      // Create a new post
+      const createRes = await request(app)
+        .post("/post")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Post to delete without auth" });
+
+      const res = await request(app)
+        .delete(`/post/${createRes.body._id}`);
+
+      expect(res.status).toBe(401);
+
+      // Cleanup
+      await Post.findByIdAndDelete(createRes.body._id);
+    });
+
+    test("should fail to delete another user's post", async () => {
+      // Create another user
+      const otherUser = {
+        email: "otherpostuser@example.com",
+        password: "password123",
+        name: "Other User",
+      };
+      const otherRegisterRes = await request(app)
+        .post("/auth/register")
+        .send(otherUser);
+      const otherToken = otherRegisterRes.body.token;
+
+      // Create a post with the first user
+      const createRes = await request(app)
+        .post("/post")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "First user's post" });
+
+      // Try to delete with second user
+      const res = await request(app)
+        .delete(`/post/${createRes.body._id}`)
+        .set("Authorization", `Bearer ${otherToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toContain("Forbidden");
+
+      // Cleanup
+      await Post.findByIdAndDelete(createRes.body._id);
+      await User.deleteMany({ email: otherUser.email });
+    });
+  });
+
+  describe("Additional edge cases", () => {
+    test("should get posts filtered by owner", async () => {
+      const res = await request(app)
+        .get("/post")
+        .query({ owner: userId });
+
+      expect(res.status).toBe(200);
+      expect(res.body.posts).toBeDefined();
+      if (res.body.posts.length > 0) {
+        expect(res.body.posts[0].owner._id).toBe(userId);
+      }
+    });
+
+    test("should fail to create post with empty content", async () => {
+      const res = await request(app)
+        .post("/post")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "   " });
+
+      expect(res.status).toBe(400);
+    });
+
+    test("should fail to update non-existent post", async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .put(`/post/${fakeId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Updated content" });
+
+      expect(res.status).toBe(404);
+    });
+
+    test("should fail to update another user's post", async () => {
+      // Create another user
+      const otherUser = {
+        email: "anotheruserpost@example.com",
+        password: "password123",
+        name: "Another User",
+      };
+      const otherRegisterRes = await request(app)
+        .post("/auth/register")
+        .send(otherUser);
+      const otherToken = otherRegisterRes.body.token;
+
+      // Create a post with the first user
+      const createRes = await request(app)
+        .post("/post")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Original post" });
+
+      // Try to update with second user
+      const res = await request(app)
+        .put(`/post/${createRes.body._id}`)
+        .set("Authorization", `Bearer ${otherToken}`)
+        .send({ content: "Hacked content" });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toContain("Forbidden");
+
+      // Cleanup
+      await Post.findByIdAndDelete(createRes.body._id);
+      await User.deleteMany({ email: otherUser.email });
+    });
+
+    test("should respect max limit of 50 for pagination", async () => {
+      const res = await request(app)
+        .get("/post")
+        .query({ page: 1, limit: 100 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination.limit).toBe(50);
+    });
+
+    test("should fail to like non-existent post", async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .post(`/post/${fakeId}/like`)
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(404);
+    });
+
+    test("should get post by invalid ID format", async () => {
+      const res = await request(app)
+        .get(`/post/invalidid123`);
+
+      expect(res.status).toBe(500);
+    });
+
+    test("should get user posts with pagination", async () => {
+      const res = await request(app)
+        .get(`/post/user/${userId}`)
+        .query({ page: 1, limit: 5 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.posts).toBeDefined();
+      expect(res.body.pagination).toBeDefined();
+      expect(res.body.pagination.page).toBe(1);
+      expect(res.body.pagination.limit).toBe(5);
+    });
+
+    test("should include like status in posts when authenticated", async () => {
+      // Create a post and like it
+      const createRes = await request(app)
+        .post("/post")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Post to test like status" });
+
+      await request(app)
+        .post(`/post/${createRes.body._id}/like`)
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      const res = await request(app)
+        .get(`/post/${createRes.body._id}`)
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.isLiked).toBe(true);
+
+      // Cleanup
+      await Post.findByIdAndDelete(createRes.body._id);
+    });
+
+    test("should handle multiple page requests correctly", async () => {
+      const page1 = await request(app)
+        .get("/post")
+        .query({ page: 1, limit: 2 });
+
+      const page2 = await request(app)
+        .get("/post")
+        .query({ page: 2, limit: 2 });
+
+      expect(page1.status).toBe(200);
+      expect(page2.status).toBe(200);
+      expect(page1.body.pagination.page).toBe(1);
+      expect(page2.body.pagination.page).toBe(2);
+    });
   });
 });

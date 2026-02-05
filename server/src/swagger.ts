@@ -5,9 +5,9 @@ const options: swaggerJsdoc.Options = {
     definition: {
         openapi: "3.0.0",
         info: {
-            title: "Movie & Comments REST API",
+            title: "Social Network REST API",
             version: "1.0.0",
-            description: "A REST API for managing movies and comments with user authentication",
+            description: "A Social Network REST API with posts, comments, and user management",
             contact: {
                 name: "Menachi",
                 email: "developer@example.com",
@@ -49,58 +49,6 @@ const options: swaggerJsdoc.Options = {
                             minLength: 6,
                             description: "User password (hashed when stored)",
                             example: "password123",
-                        },
-                    },
-                },
-                Movie: {
-                    type: "object",
-                    required: ["title", "releaseYear", "createdBy"],
-                    properties: {
-                        _id: {
-                            type: "string",
-                            description: "Movie unique identifier",
-                            example: "507f1f77bcf86cd799439011",
-                        },
-                        title: {
-                            type: "string",
-                            description: "Movie title",
-                            example: "The Matrix",
-                        },
-                        releaseYear: {
-                            type: "number",
-                            description: "Year the movie was released",
-                            example: 1999,
-                        },
-                        createdBy: {
-                            type: "string",
-                            description: "ID of the user who created this movie entry",
-                            example: "507f1f77bcf86cd799439011",
-                        },
-                    },
-                },
-                MovieComment: {
-                    type: "object",
-                    required: ["message", "movieId", "writerId"],
-                    properties: {
-                        _id: {
-                            type: "string",
-                            description: "Comment unique identifier",
-                            example: "507f1f77bcf86cd799439011",
-                        },
-                        message: {
-                            type: "string",
-                            description: "Comment message content",
-                            example: "Great movie! Loved the special effects.",
-                        },
-                        movieId: {
-                            type: "string",
-                            description: "ID of the movie this comment belongs to",
-                            example: "507f1f77bcf86cd799439011",
-                        },
-                        writerId: {
-                            type: "string",
-                            description: "ID of the user who wrote this comment",
-                            example: "507f1f77bcf86cd799439011",
                         },
                     },
                 },

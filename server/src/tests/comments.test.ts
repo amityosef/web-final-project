@@ -192,5 +192,139 @@ describe("Comments API", () => {
 
       expect(res.status).toBe(404);
     });
+
+    test("should fail to delete without authentication", async () => {
+      // Create a new comment first
+      const createRes = await request(app)
+        .post(`/comment/post/${postId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Comment to delete without auth" });
+
+      const res = await request(app)
+        .delete(`/comment/${createRes.body._id}`);
+
+      expect(res.status).toBe(401);
+
+      // Cleanup
+      await Comments.findByIdAndDelete(createRes.body._id);
+    });
+
+    test("should fail to delete another user's comment", async () => {
+      // Create another user
+      const otherUser = {
+        email: "othercommentuser@example.com",
+        password: "password123",
+        name: "Other User",
+      };
+      const otherRegisterRes = await request(app)
+        .post("/auth/register")
+        .send(otherUser);
+      const otherToken = otherRegisterRes.body.token;
+
+      // Create a comment with the first user
+      const createRes = await request(app)
+        .post(`/comment/post/${postId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "First user's comment" });
+
+      // Try to delete with second user
+      const res = await request(app)
+        .delete(`/comment/${createRes.body._id}`)
+        .set("Authorization", `Bearer ${otherToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toContain("Forbidden");
+
+      // Cleanup
+      await Comments.findByIdAndDelete(createRes.body._id);
+      await User.deleteMany({ email: otherUser.email });
+    });
+  });
+
+  describe("Additional edge cases", () => {
+    test("should fail to create comment with empty content", async () => {
+      const res = await request(app)
+        .post(`/comment/post/${postId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "   " });
+
+      expect(res.status).toBe(400);
+    });
+
+    test("should fail to update non-existent comment", async () => {
+      const fakeId = new mongoose.Types.ObjectId().toString();
+      const res = await request(app)
+        .put(`/comment/${fakeId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Updated content" });
+
+      expect(res.status).toBe(404);
+    });
+
+    test("should fail to update another user's comment", async () => {
+      // Create another user
+      const otherUser = {
+        email: "anotherusercomment@example.com",
+        password: "password123",
+        name: "Another User",
+      };
+      const otherRegisterRes = await request(app)
+        .post("/auth/register")
+        .send(otherUser);
+      const otherToken = otherRegisterRes.body.token;
+
+      // Create a comment with the first user
+      const createRes = await request(app)
+        .post(`/comment/post/${postId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Original comment" });
+
+      // Try to update with second user
+      const res = await request(app)
+        .put(`/comment/${createRes.body._id}`)
+        .set("Authorization", `Bearer ${otherToken}`)
+        .send({ content: "Hacked content" });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error).toContain("Forbidden");
+
+      // Cleanup
+      await Comments.findByIdAndDelete(createRes.body._id);
+      await User.deleteMany({ email: otherUser.email });
+    });
+
+    test("should get comments with pagination limit enforced", async () => {
+      // Create multiple comments
+      for (let i = 0; i < 5; i++) {
+        await request(app)
+          .post(`/comment/post/${postId}`)
+          .set("Authorization", `Bearer ${accessToken}`)
+          .send({ content: `Comment ${i}` });
+      }
+
+      const res = await request(app)
+        .get(`/comment/post/${postId}`)
+        .query({ page: 1, limit: 3 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.comments.length).toBeLessThanOrEqual(3);
+      expect(res.body.pagination.limit).toBe(3);
+    });
+
+    test("should respect max limit of 50 for pagination", async () => {
+      const res = await request(app)
+        .get(`/comment/post/${postId}`)
+        .query({ page: 1, limit: 100 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.pagination.limit).toBe(50);
+    });
+
+    test("should get comment by invalid ID format", async () => {
+      const res = await request(app)
+        .get(`/comment/invalidid123`);
+
+      expect(res.status).toBe(500);
+    });
   });
 });

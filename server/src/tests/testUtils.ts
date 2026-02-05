@@ -12,27 +12,12 @@ type UserData = {
 };
 
 export const userData: UserData = {
-    email: "test@testMovies.com",
-    password: "testpasswordMovies",
+    email: "test@test.com",
+    password: "testpassword",
     name: "Test User",
 };
 
-export type MoviesData = {
-    title: string;
-    releaseYear: number;
-    _id?: string;
-};
-
-export var moviesData: MoviesData[] = [
-    { title: "Movie A", releaseYear: 2000 },
-    { title: "Movie B", releaseYear: 2001 },
-    { title: "Movie C", releaseYear: 2002 },
-];
-
-export const singleMovieData: MoviesData =
-    { title: "Movie A", releaseYear: 2000 };
-
-// New Post types for social network
+// Post types for social network
 export type PostData = {
     content: string;
     image?: string;
@@ -63,22 +48,6 @@ export var commentsDataNew: CommentData[] = [
     { content: "Great post!" },
     { content: "Loved it!" },
     { content: "Nice content!" },
-];
-
-// Legacy comment type
-export type CommentsData = {
-    message: string;
-    movieId: string;
-    writerId?: string;
-    _id?: string;
-};
-
-export var commentsData: CommentsData[] = [
-    { message: "Great movie!", movieId: "movie1" },
-    { message: "Loved it!", movieId: "movie1" },
-    { message: "Not bad.", movieId: "movie2" },
-    { message: "Worst movie ever.", movieId: "movie2" },
-    { message: "Could be better.", movieId: "movie3" },
 ];
 
 export const registerTestUser = async (app: Express, customUser?: UserData) => {
