@@ -51,7 +51,7 @@ const upload = multer({ storage });
  */
 router.post("/", upload.single("file"), (req, res) => {
     const base = `http://${process.env.DOMAIN_BASE}`;
-    const port = process.env.environment === "production" ? "" : `:${process.env.PORT}`;
+    const port = process.env.NODE_ENV === "production" ? "" : `:${process.env.PORT}`;
     const relativePath = `/public/uploads/${req.file?.filename}`;
     res.status(200).send({ url: base + port + relativePath });
 });
