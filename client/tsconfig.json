@@ -6,7 +6,6 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-{kkk
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -14,13 +13,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-{kkk
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-{kkk
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
