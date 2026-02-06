@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "social-network-api",
       script: "./dist/src/server.js",
-      instances: "max", // Use all available CPU cores
+      instances: "max",
       exec_mode: "cluster",
       watch: false,
       max_memory_restart: "500M",
@@ -15,16 +15,13 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 4000,
       },
-      // Logging configuration
       log_date_format: "YYYY-MM-DD HH:mm:ss Z",
       error_file: "./logs/error.log",
       out_file: "./logs/output.log",
       merge_logs: true,
-      // Restart configuration
       autorestart: true,
       restart_delay: 1000,
       max_restarts: 10,
-      // Graceful shutdown
       kill_timeout: 5000,
       wait_ready: true,
       listen_timeout: 10000,

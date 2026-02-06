@@ -311,5 +311,56 @@ describe("Comments API", () => {
 
       expect(res.status).toBe(500);
     });
+
+    test("should handle database error in getCommentsByPost", async () => {
+      jest.spyOn(Post, "findById").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app).get(`/comment/post/${postId}`);
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to get comments");
+
+      (Post.findById as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in createComment", async () => {
+      jest.spyOn(Comments, "create").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .post(`/comment/post/${postId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Test comment" });
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to create comment");
+
+      (Comments.create as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in updateComment", async () => {
+      jest.spyOn(Comments, "findById").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .put(`/comment/507f1f77bcf86cd799439011`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Updated content" });
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to update comment");
+
+      (Comments.findById as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in deleteComment", async () => {
+      jest.spyOn(Comments, "findById").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .delete(`/comment/507f1f77bcf86cd799439011`)
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to delete comment");
+
+      (Comments.findById as jest.Mock).mockRestore();
+    });
   });
 });

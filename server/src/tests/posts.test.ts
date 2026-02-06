@@ -374,5 +374,121 @@ describe("Posts API", () => {
       expect(page1.body.pagination.page).toBe(1);
       expect(page2.body.pagination.page).toBe(2);
     });
+
+    test("should update post image only", async () => {
+      const createRes = await request(app)
+        .post("/post")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Post for image update" });
+
+      const res = await request(app)
+        .put(`/post/${createRes.body._id}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ image: "/new/image.jpg" });
+
+      expect(res.status).toBe(200);
+      expect(res.body.image).toBe("/new/image.jpg");
+      expect(res.body.content).toBe("Post for image update");
+
+      await Post.findByIdAndDelete(createRes.body._id);
+    });
+
+    test("should test isLikedBy method directly", async () => {
+      const mongoose = require("mongoose");
+
+      const post = await Post.create({
+        content: "Test isLikedBy method",
+        owner: new mongoose.Types.ObjectId(userId),
+        likes: [],
+        likesCount: 0,
+        commentsCount: 0,
+      });
+
+      const testUserId = new mongoose.Types.ObjectId();
+      expect((post as any).isLikedBy(testUserId)).toBe(false);
+
+      post.likes.push(testUserId);
+      expect((post as any).isLikedBy(testUserId)).toBe(true);
+
+      await Post.findByIdAndDelete(post._id);
+    });
+
+    test("should handle database error in getPosts", async () => {
+      jest.spyOn(Post, "find").mockImplementationOnce(() => {
+        throw new Error("Database error");
+      });
+
+      const res = await request(app).get("/post");
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to get posts");
+
+      (Post.find as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in createPost", async () => {
+      jest.spyOn(Post, "create").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .post("/post")
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Test content" });
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to create post");
+
+      (Post.create as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in updatePost", async () => {
+      jest.spyOn(Post, "findById").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .put(`/post/507f1f77bcf86cd799439011`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ content: "Updated content" });
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to update post");
+
+      (Post.findById as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in deletePost", async () => {
+      jest.spyOn(Post, "findById").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .delete(`/post/507f1f77bcf86cd799439011`)
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to delete post");
+
+      (Post.findById as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in toggleLike", async () => {
+      jest.spyOn(Post, "findById").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .post(`/post/507f1f77bcf86cd799439011/like`)
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to toggle like");
+
+      (Post.findById as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in getUserPosts", async () => {
+      jest.spyOn(Post, "find").mockImplementationOnce(() => {
+        throw new Error("Database error");
+      });
+
+      const res = await request(app).get(`/post/user/${userId}`);
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to get user posts");
+
+      (Post.find as jest.Mock).mockRestore();
+    });
   });
 });

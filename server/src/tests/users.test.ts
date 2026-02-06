@@ -215,6 +215,27 @@ describe("User Profile API", () => {
       expect(res.body.name).toBe("Name Only Update");
     });
 
+    test("should handle update profile when user was deleted", async () => {
+      const tempUser = await request(app)
+        .post("/auth/register")
+        .send({
+          email: "deleteduser@test.com",
+          password: "password123"
+        });
+
+      const tempToken = tempUser.body.token;
+      const tempUserId = tempUser.body.user._id;
+
+      await User.findByIdAndDelete(tempUserId);
+
+      const res = await request(app)
+        .put(`/user/${tempUserId}`)
+        .set("Authorization", `Bearer ${tempToken}`)
+        .send({ name: "New Name" });
+
+      expect(res.status).toBe(404);
+    });
+
     test("should return user profile without sensitive fields", async () => {
       const res = await request(app)
         .get(`/user/${userId}`);
@@ -232,6 +253,47 @@ describe("User Profile API", () => {
       expect(res.status).toBe(200);
       expect(res.body).not.toHaveProperty("password");
       expect(res.body).not.toHaveProperty("refreshToken");
+    });
+
+    test("should handle database error in getProfile", async () => {
+      jest.spyOn(User, "findById").mockImplementationOnce(() => {
+        throw new Error("Database error");
+      });
+
+      const res = await request(app).get(`/user/${userId}`);
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to get profile");
+
+      (User.findById as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in updateProfile", async () => {
+      jest.spyOn(User, "findById").mockRejectedValueOnce(new Error("Database error"));
+
+      const res = await request(app)
+        .put(`/user/${userId}`)
+        .set("Authorization", `Bearer ${accessToken}`)
+        .send({ name: "Test" });
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to update profile");
+
+      (User.findById as jest.Mock).mockRestore();
+    });
+
+    test("should handle database error in getMyProfile", async () => {
+      jest.spyOn(User, "findById").mockImplementationOnce(() => {
+        throw new Error("Database error");
+      });
+
+      const res = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe("Failed to get profile");
+
+      (User.findById as jest.Mock).mockRestore();
     });
   });
 });
