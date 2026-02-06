@@ -43,7 +43,9 @@ export const postService = {
     await api.delete(`/post/${postId}`);
   },
 
-  toggleLike: async (postId: string): Promise<{ postId: string; isLiked: boolean; likesCount: number }> => {
+  toggleLike: async (
+    postId: string
+  ): Promise<{ postId: string; isLiked: boolean; likesCount: number }> => {
     const response = await api.post<{ postId: string; isLiked: boolean; likesCount: number }>(
       `/post/${postId}/like`
     );

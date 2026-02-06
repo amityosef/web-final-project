@@ -16,7 +16,9 @@ export const aiService = {
     return response.data;
   },
 
-  generateSuggestions: async (options: GenerateSuggestionsOptions = {}): Promise<AISuggestionsResponse> => {
+  generateSuggestions: async (
+    options: GenerateSuggestionsOptions = {}
+  ): Promise<AISuggestionsResponse> => {
     const response = await api.post<AISuggestionsResponse>('/ai/suggestions', options);
     return response.data;
   },

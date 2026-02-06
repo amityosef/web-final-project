@@ -2,7 +2,11 @@ import api from './api';
 import { Comment, CommentsResponse } from '../types';
 
 export const commentService = {
-  getCommentsByPost: async (postId: string, page: number = 1, limit: number = 20): Promise<CommentsResponse> => {
+  getCommentsByPost: async (
+    postId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<CommentsResponse> => {
     const response = await api.get<CommentsResponse>(`/comment/post/${postId}`, {
       params: { page, limit },
     });

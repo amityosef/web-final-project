@@ -12,7 +12,10 @@ export const userService = {
     return response.data;
   },
 
-  updateProfile: async (userId: string, data: { name?: string; profileImage?: string }): Promise<User> => {
+  updateProfile: async (
+    userId: string,
+    data: { name?: string; profileImage?: string }
+  ): Promise<User> => {
     const response = await api.put<User>(`/user/${userId}`, data);
     return response.data;
   },

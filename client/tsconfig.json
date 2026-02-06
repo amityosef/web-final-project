@@ -6,7 +6,7 @@
     "module": "ESNext",
     "skipLibCheck": true,
 
-    /* Bundler mode */
+{kkk
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -14,13 +14,13 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+{kkk
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* Path aliases */
+{kkk
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]

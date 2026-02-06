@@ -9,12 +9,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="100vh"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <CircularProgress />
       </Box>
     );
@@ -23,10 +18,7 @@ function App() {
   return (
     <Box sx={{ minHeight: '100vh' }}>
       <Routes>
-        <Route
-          path="/login"
-          element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />}
-        />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />} />
         <Route
           path="/register"
           element={isAuthenticated ? <Navigate to="/" /> : <RegisterPage />}
@@ -55,10 +47,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="*"
-          element={<Navigate to={isAuthenticated ? '/' : '/login'} />}
-        />
+        <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/login'} />} />
       </Routes>
     </Box>
   );
