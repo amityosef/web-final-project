@@ -1,11 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from './context/AuthContext';
-
-// Pages
 import { LoginPage, RegisterPage, FeedPage, ProfilePage, PostDetailPage } from './pages';
-
-// Components
 import { ProtectedRoute } from './components';
 
 function App() {
@@ -27,7 +23,6 @@ function App() {
   return (
     <Box sx={{ minHeight: '100vh' }}>
       <Routes>
-        {/* Public Routes */}
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/" /> : <LoginPage />}
@@ -36,8 +31,6 @@ function App() {
           path="/register"
           element={isAuthenticated ? <Navigate to="/" /> : <RegisterPage />}
         />
-
-        {/* Protected Routes */}
         <Route
           path="/"
           element={
@@ -62,8 +55,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Catch all - redirect to home or login */}
         <Route
           path="*"
           element={<Navigate to={isAuthenticated ? '/' : '/login'} />}

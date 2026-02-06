@@ -41,7 +41,6 @@ const PostDetailPage: React.FC = () => {
     const [likesCount, setLikesCount] = useState(0);
     const [likeLoading, setLikeLoading] = useState(false);
 
-    // Menu state
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -74,7 +73,6 @@ const PostDetailPage: React.FC = () => {
         if (likeLoading || !post) return;
         setLikeLoading(true);
 
-        // Optimistic update
         const wasLiked = liked;
         setLiked(!wasLiked);
         setLikesCount((prev) => (wasLiked ? prev - 1 : prev + 1));
@@ -84,7 +82,6 @@ const PostDetailPage: React.FC = () => {
             setLiked(response.isLiked);
             setLikesCount(response.likesCount);
         } catch (error) {
-            // Revert on error
             setLiked(wasLiked);
             setLikesCount((prev) => (wasLiked ? prev + 1 : prev - 1));
             console.error('Failed to toggle like:', error);

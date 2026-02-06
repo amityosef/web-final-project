@@ -38,7 +38,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onClose }) 
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Reset state when user changes or dialog opens
     useEffect(() => {
         if (open && user) {
             setName(user.name || '');
@@ -67,7 +66,6 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onClose }) 
 
     const handleClose = () => {
         if (!isLoading) {
-            // Clean up object URL if created
             if (imagePreview && profileImage) {
                 URL.revokeObjectURL(imagePreview);
             }
@@ -87,13 +85,11 @@ const EditProfileDialog: React.FC<EditProfileDialogProps> = ({ open, onClose }) 
         try {
             let newProfileImage: string | undefined;
 
-            // Upload new profile image if selected
             if (profileImage) {
                 const uploadResponse = await uploadService.uploadImage(profileImage);
                 newProfileImage = uploadResponse.url;
             }
 
-            // Update profile
             const updatedUser = await userService.updateProfile(user!._id, {
                 name: name.trim(),
                 ...(newProfileImage && { profileImage: newProfileImage }),

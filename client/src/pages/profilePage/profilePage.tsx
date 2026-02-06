@@ -71,10 +71,8 @@ const ProfilePage: React.FC = () => {
 
         try {
             if (isOwnProfile) {
-                // Use current user data
                 setProfile(currentUser);
             } else {
-                // Fetch other user's profile
                 const userData = await userService.getProfile(userId!);
                 setProfile(userData);
             }

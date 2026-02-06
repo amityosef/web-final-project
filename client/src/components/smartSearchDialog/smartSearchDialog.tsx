@@ -53,7 +53,6 @@ const SmartSearchDialog: React.FC<SmartSearchDialogProps> = ({ open, onClose }) 
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
     const [searched, setSearched] = useState(false);
 
-    // Load search history from localStorage
     useEffect(() => {
         const history = localStorage.getItem('searchHistory');
         if (history) {
@@ -61,7 +60,6 @@ const SmartSearchDialog: React.FC<SmartSearchDialogProps> = ({ open, onClose }) 
         }
     }, [open]);
 
-    // Get AI suggestions when dialog opens
     useEffect(() => {
         if (open && suggestions.length === 0) {
             loadSuggestions();
@@ -73,7 +71,6 @@ const SmartSearchDialog: React.FC<SmartSearchDialogProps> = ({ open, onClose }) 
             const response = await aiService.generateSuggestions({});
             setSuggestions(response.suggestions || []);
         } catch (error) {
-            // Silently fail for suggestions
             console.error('Failed to load suggestions:', error);
         }
     };
@@ -89,7 +86,6 @@ const SmartSearchDialog: React.FC<SmartSearchDialogProps> = ({ open, onClose }) 
             const response = await aiService.smartSearch(query);
             setResults(response.posts);
 
-            // Save to search history
             const history = localStorage.getItem('searchHistory');
             let searchHistoryList: string[] = history ? JSON.parse(history) : [];
             searchHistoryList = [query, ...searchHistoryList.filter(h => h !== query)].slice(0, consts.MAX_HISTORY_STORED);
@@ -110,7 +106,6 @@ const SmartSearchDialog: React.FC<SmartSearchDialogProps> = ({ open, onClose }) 
 
     const handleSuggestionClick = (suggestion: string) => {
         setQuery(suggestion);
-        // Auto-search after selecting suggestion
         setTimeout(() => {
             setIsLoading(true);
             setError(null);

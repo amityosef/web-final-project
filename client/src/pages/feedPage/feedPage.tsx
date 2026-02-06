@@ -27,7 +27,6 @@ const FeedPage: React.FC = () => {
     const observerRef = useRef<IntersectionObserver | null>(null);
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-    // Fetch posts
     const fetchPosts = useCallback(async (pageNum: number, reset: boolean = false) => {
         if (pageNum === 1) {
             setIsLoading(true);
@@ -43,7 +42,6 @@ const FeedPage: React.FC = () => {
                 setPosts(response.posts);
             } else {
                 setPosts((prev) => {
-                    // Avoid duplicates
                     const newPosts = response.posts.filter(
                         (newPost) => !prev.some((p) => p._id === newPost._id)
                     );
@@ -61,12 +59,10 @@ const FeedPage: React.FC = () => {
         }
     }, []);
 
-    // Initial load
     useEffect(() => {
         fetchPosts(1, true);
     }, [fetchPosts]);
 
-    // Infinite scroll observer
     useEffect(() => {
         if (isLoading || isLoadingMore || !hasMore) return;
 
@@ -90,7 +86,6 @@ const FeedPage: React.FC = () => {
         };
     }, [isLoading, isLoadingMore, hasMore, page, fetchPosts]);
 
-    // Scroll to top button visibility
     useEffect(() => {
         const handleScroll = () => {
             setShowScrollTop(window.scrollY > 300);

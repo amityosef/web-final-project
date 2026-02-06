@@ -2,7 +2,6 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-// Create axios instance
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: {
@@ -10,7 +9,6 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Token management
 let accessToken: string | null = null;
 let refreshToken: string | null = null;
 
@@ -38,7 +36,6 @@ export const clearTokens = () => {
   localStorage.removeItem('refreshToken');
 };
 
-// Request interceptor to add auth header
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const { accessToken: token } = getTokens();
@@ -50,13 +47,11 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-    // If error is 401 and we haven't tried refreshing yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -70,11 +65,9 @@ api.interceptors.response.use(
           const { token, refreshToken: newRefresh } = response.data;
           setTokens(token, newRefresh);
 
-          // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return api(originalRequest);
         } catch (refreshError) {
-          // Refresh failed, clear tokens
           clearTokens();
           window.location.href = '/login';
           return Promise.reject(refreshError);

@@ -51,7 +51,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdate, onDelete }) => {
         if (isLoading) return;
         setIsLoading(true);
 
-        // Optimistic update
         const wasLiked = liked;
         setLiked(!wasLiked);
         setLikesCount((prev) => (wasLiked ? prev - 1 : prev + 1));
@@ -61,7 +60,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onUpdate, onDelete }) => {
             setLiked(response.isLiked);
             setLikesCount(response.likesCount);
         } catch (error) {
-            // Revert on error
             setLiked(wasLiked);
             setLikesCount((prev) => (wasLiked ? prev + 1 : prev - 1));
             console.error('Failed to toggle like:', error);

@@ -42,15 +42,12 @@ const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Edit state
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editContent, setEditContent] = useState('');
 
-    // Menu state
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
 
-    // Delete confirmation
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
     useEffect(() => {

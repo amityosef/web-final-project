@@ -39,7 +39,6 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({ open, post, onClose, on
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Reset state when post changes
     useEffect(() => {
         setContent(post.content);
         setImage(null);
@@ -80,7 +79,6 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({ open, post, onClose, on
 
     const handleClose = () => {
         if (!isLoading) {
-            // Clean up object URL if created
             if (imagePreview && image) {
                 URL.revokeObjectURL(imagePreview);
             }
@@ -100,13 +98,11 @@ const EditPostDialog: React.FC<EditPostDialogProps> = ({ open, post, onClose, on
         try {
             let imageUrl: string | undefined = removeImage ? '' : post.image;
 
-            // Upload new image if selected
             if (image) {
                 const uploadResponse = await uploadService.uploadImage(image);
                 imageUrl = uploadResponse.url;
             }
 
-            // Update post
             const updatedPost = await postService.updatePost(post._id, {
                 content: content.trim(),
                 image: imageUrl,

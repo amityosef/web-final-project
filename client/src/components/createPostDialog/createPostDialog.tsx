@@ -84,13 +84,11 @@ const CreatePostDialog: React.FC<CreatePostDialogProps> = ({ open, onClose, onCr
         try {
             let imageUrl: string | undefined;
 
-            // Upload image if selected
             if (image) {
                 const uploadResponse = await uploadService.uploadImage(image);
                 imageUrl = uploadResponse.url;
             }
 
-            // Create post
             const newPost = await postService.createPost({
                 content: content.trim(),
                 image: imageUrl,
