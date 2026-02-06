@@ -1,10 +1,17 @@
 import express from "express";
 import multer from "multer";
+import fs from "fs";
+import path from "path";
 
 const router = express.Router();
 
+const uploadDir = path.join(process.cwd(), "public/uploads");
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, "public/uploads/"),
+    destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
         const ext = file.originalname.split(".").filter(Boolean).slice(1).join(".");
         cb(null, Date.now() + "." + ext);
@@ -44,7 +51,8 @@ const upload = multer({ storage });
  */
 router.post("/", upload.single("file"), (req, res) => {
     const base = `http://${process.env.DOMAIN_BASE}:${process.env.PORT}/`;
-    res.status(200).send({ url: base + req.file?.path });
+    const relativePath = `public/uploads/${req.file?.filename}`;
+    res.status(200).send({ url: base + relativePath });
 });
 
 export default router;
