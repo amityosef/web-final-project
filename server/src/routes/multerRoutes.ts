@@ -2,7 +2,6 @@ import express from "express";
 import multer from "multer";
 
 const router = express.Router();
-const base = "http://" + process.env.DOMAIN_BASE + ":" + process.env.PORT + "/";
 
 const storage = multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, "public/uploads/"),
@@ -43,8 +42,9 @@ const upload = multer({ storage });
  *                   type: string
  *                   description: URL of the uploaded file
  */
-router.post("/", upload.single("file"), (req: any, res: any) => {
-    res.status(200).send({ url: base + req.file.path });
+router.post("/", upload.single("file"), (req, res) => {
+    const base = `http://${process.env.DOMAIN_BASE}:${process.env.PORT}/`;
+    res.status(200).send({ url: base + req.file?.path });
 });
 
 export default router;
