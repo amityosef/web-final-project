@@ -492,3 +492,54 @@ describe("Posts API", () => {
     });
   });
 });
+
+describe("Post Controller Direct Tests", () => {
+    const postController = require("../controllers/postController").default;
+
+    const mockResponse = () => {
+        const res: any = {};
+        res.status = jest.fn().mockReturnValue(res);
+        res.json = jest.fn().mockReturnValue(res);
+        return res;
+    };
+
+    test("createPost without userId returns 401", async () => {
+        const req: any = { body: { content: "test" }, user: undefined };
+        const res = mockResponse();
+
+        await postController.createPost(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+
+    test("updatePost without userId returns 401", async () => {
+        const req: any = { body: {}, params: { id: "123" }, user: undefined };
+        const res = mockResponse();
+
+        await postController.updatePost(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+
+    test("deletePost without userId returns 401", async () => {
+        const req: any = { params: { id: "123" }, user: undefined };
+        const res = mockResponse();
+
+        await postController.deletePost(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+
+    test("toggleLike without userId returns 401", async () => {
+        const req: any = { params: { id: "123" }, user: undefined };
+        const res = mockResponse();
+
+        await postController.toggleLike(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+});

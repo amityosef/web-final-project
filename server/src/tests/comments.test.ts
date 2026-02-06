@@ -364,3 +364,44 @@ describe("Comments API", () => {
     });
   });
 });
+
+describe("Comment Controller Direct Tests", () => {
+    const commentController = require("../controllers/commentController").default;
+
+    const mockResponse = () => {
+        const res: any = {};
+        res.status = jest.fn().mockReturnValue(res);
+        res.json = jest.fn().mockReturnValue(res);
+        return res;
+    };
+
+    test("createComment without userId returns 401", async () => {
+        const req: any = { body: { content: "test" }, params: { postId: "123" }, user: undefined };
+        const res = mockResponse();
+
+        await commentController.createComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+
+    test("updateComment without userId returns 401", async () => {
+        const req: any = { body: { content: "test" }, params: { id: "123" }, user: undefined };
+        const res = mockResponse();
+
+        await commentController.updateComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+
+    test("deleteComment without userId returns 401", async () => {
+        const req: any = { params: { id: "123" }, user: undefined };
+        const res = mockResponse();
+
+        await commentController.deleteComment(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+});

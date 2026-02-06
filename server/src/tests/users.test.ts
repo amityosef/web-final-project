@@ -297,3 +297,34 @@ describe("User Profile API", () => {
     });
   });
 });
+
+describe("User Controller Direct Tests", () => {
+    const userController = require("../controllers/userController").default;
+
+    const mockResponse = () => {
+        const res: any = {};
+        res.status = jest.fn().mockReturnValue(res);
+        res.json = jest.fn().mockReturnValue(res);
+        return res;
+    };
+
+    test("updateProfile without userId returns 401", async () => {
+        const req: any = { body: { name: "test" }, params: { userId: "123" }, user: undefined };
+        const res = mockResponse();
+
+        await userController.updateProfile(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+
+    test("getMyProfile without userId returns 401", async () => {
+        const req: any = { user: undefined };
+        const res = mockResponse();
+
+        await userController.getMyProfile(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+    });
+});
