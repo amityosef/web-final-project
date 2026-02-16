@@ -1,0 +1,17 @@
+export const pageTitle = 'Create Account';
+export const pageSubtitle = 'Sign up to get started';
+export const nameLabel = 'Display Name';
+export const emailLabel = 'Email';
+export const passwordLabel = 'Password';
+export const confirmPasswordLabel = 'Confirm Password';
+export const passwordHelperText = 'At least 6 characters';
+export const signUpButton = 'Sign Up';
+export const dividerText = 'OR';
+export const alreadyHaveAccountText = 'Already have an account?';
+export const signInLinkText = 'Sign In';
+export const errorFieldsRequired = 'Please fill in all fields';
+export const errorPasswordsMismatch = 'Passwords do not match';
+export const errorPasswordTooShort = 'Password must be at least';
+export const errorRegistrationFailed = 'Registration failed. Please try again.';
+export const errorGoogleFailed = 'Google login failed';
+export const loadingMessage = 'Creating account...';
