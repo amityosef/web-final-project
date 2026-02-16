@@ -1,0 +1,12 @@
+export const profileTitle = 'Profile';
+export const editProfileLabel = 'Edit Profile';
+export const postsTabLabel = 'Posts';
+export const aboutTabLabel = 'About';
+export const loadingMessage = 'Loading profile...';
+export const errorLoadingProfile = 'Failed to load profile';
+export const profileNotFoundMessage = 'Profile not found';
+export const noPostsMessage = 'No posts yet';
+export const unnamedUserLabel = 'Unnamed User';
+export const emailLabel = 'Email';
+export const joinedLabel = 'Joined';
+export const postsTotalLikes = 'Total Likes';
