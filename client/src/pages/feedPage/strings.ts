@@ -1,0 +1,9 @@
+export const pageTitle = 'Feed';
+export const noPostsTitle = 'No posts yet';
+export const noPostsMessage = 'Be the first to share something!';
+export const loadingMessage = 'Loading posts...';
+export const loadingMoreMessage = 'Loading more...';
+export const errorLoadingPosts = 'Failed to load posts';
+export const endOfFeedMessage = "You're all caught up!";
+export const scrollToTopLabel = 'Scroll to top';
+export const createPostLabel = 'Create Post';
