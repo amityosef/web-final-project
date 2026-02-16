@@ -1,0 +1,13 @@
+export const welcomeTitle = 'Welcome to Social App';
+export const welcomeSubtitle = 'Sign in to continue to your account';
+export const emailLabel = 'Email';
+export const passwordLabel = 'Password';
+export const signInButton = 'Sign In';
+export const signUpButton = 'Sign Up';
+export const dividerText = 'OR';
+export const noAccountText = "Don't have an account?";
+export const signUpLinkText = 'Sign Up';
+export const errorFieldsRequired = 'Please fill in all fields';
+export const errorLoginFailed = 'Login failed. Please try again.';
+export const errorGoogleFailed = 'Google login failed';
+export const loadingMessage = 'Signing in...';
