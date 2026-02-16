@@ -1,0 +1,11 @@
+export const dialogTitle = 'Edit Post';
+export const contentPlaceholder = "What's on your mind?";
+export const addPhotoButtonText = 'Add Photo';
+export const changePhotoButtonText = 'Change Photo';
+export const cancelButtonText = 'Cancel';
+export const saveButtonText = 'Save';
+export const imagePreviewAlt = 'Preview';
+export const errorInvalidFileType = 'Please select an image file';
+export const errorFileTooLarge = 'Image must be less than 5MB';
+export const errorNoContent = 'Please add some content or an image';
+export const errorUpdatePost = 'Failed to update post';
