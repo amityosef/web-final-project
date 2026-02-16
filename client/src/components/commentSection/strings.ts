@@ -1,0 +1,14 @@
+export const sectionTitle = 'Comments';
+export const commentPlaceholder = 'Write a comment...';
+export const noCommentsText = 'No comments yet. Be the first to comment!';
+export const editMenuLabel = 'Edit';
+export const deleteMenuLabel = 'Delete';
+export const cancelButtonText = 'Cancel';
+export const saveButtonText = 'Save';
+export const deleteDialogTitle = 'Delete Comment';
+export const deleteDialogMessage = 'Are you sure you want to delete this comment?';
+export const deleteConfirmText = 'Delete';
+export const errorFetchComments = 'Failed to load comments';
+export const errorAddComment = 'Failed to add comment';
+export const errorUpdateComment = 'Failed to update comment';
+export const errorDeleteComment = 'Failed to delete comment';
