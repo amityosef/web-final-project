@@ -388,6 +388,6 @@ const options: swaggerJsdoc.Options = {
     ],
 };
 
-const specs = swaggerJsdoc(options);
+const getSwaggerSpecs = () => swaggerJsdoc(options);
 
-export { specs, swaggerUi };
+export { getSwaggerSpecs, swaggerUi };

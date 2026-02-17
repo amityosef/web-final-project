@@ -9,7 +9,7 @@ import postRoutes from "./routes/postRoutes";
 import userRoutes from "./routes/userRoutes";
 import aiRoutes from "./routes/aiRoutes";
 import multerRoute from "./routes/multerRoutes";
-import { specs, swaggerUi } from "./swagger";
+import { getSwaggerSpecs, swaggerUi } from "./swagger";
 import pgService from "./services/pgService";
 import embeddingService from "./services/embeddingService";
 
@@ -53,6 +53,7 @@ const initApp = () => {
         app.use("/upload", multerRoute);
 
         if (process.env.NODE_ENV !== "production" || process.env.ENABLE_SWAGGER === "true") {
+            const specs = getSwaggerSpecs();
             app.use(
                 "/api-docs",
                 swaggerUi.serve,
