@@ -10,6 +10,16 @@ let isLoaded = false;
 const MODEL_NAME = process.env.EMBEDDING_MODEL || "Xenova/all-MiniLM-L6-v2";
 const VECTOR_DIMENSIONS = parseInt(process.env.VECTOR_DIMENSIONS || "384");
 
+if (process.env.NODE_ENV === "test") {
+    pipeline = async (texts: string[]) => {
+        return {
+            tolist: () => texts.map(() => new Array(VECTOR_DIMENSIONS).fill(0.1)),
+        } as { tolist: () => number[][] };
+    };
+    isLoaded = true;
+    loadingPromise = Promise.resolve();
+}
+
 const loadModel = async (): Promise<void> => {
     if (isLoaded) return;
     if (loadingPromise) return loadingPromise;
