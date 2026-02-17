@@ -1,7 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 
-const options: swaggerJsdoc.Options = {
+const getOptions = (): swaggerJsdoc.Options => ({
     definition: {
         openapi: "3.0.0",
         info: {
@@ -386,8 +386,8 @@ const options: swaggerJsdoc.Options = {
         "./dist/src/routes/*.js",
         "./dist/src/controllers/*.js",
     ],
-};
+});
 
-const getSwaggerSpecs = () => swaggerJsdoc(options);
+const getSwaggerSpecs = () => swaggerJsdoc(getOptions());
 
 export { getSwaggerSpecs, swaggerUi };
